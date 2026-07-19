@@ -84,120 +84,48 @@ def run_tiktok():
         unique_id=TIKTOK_USERNAME
     )
 
+    @client.on(ConnectEvent)
+    async def on_connect(event):
+        print(f"✅ Подключено к TikTok LIVE: @{TIKTOK_USERNAME}")
 
-        @client.on(ConnectEvent)
-        async def on_connect(event):
+    @client.on(GiftEvent)
+    async def on_gift(event):
+        gift_name = event.gift.name
+        username = event.user.nickname
+        count = event.gift.repeat_count or 1
 
-            print(
-                f"✅ Подключено к TikTok LIVE: @{TIKTOK_USERNAME}"
-            )
+        print(f"🎁 {username}: {gift_name} x{count}")
 
+        if gift_name not in GIFTS:
+            print(f"⚠️ Неизвестный подарок: {gift_name}")
+            return
 
-        @client.on(GiftEvent)
-        async def on_gift(event):
+        gift_data = GIFTS[gift_name]
 
-            gift_name = event.gift.name
-            username = event.user.nickname
+        points = gift_data["points"] * count
+        team = gift_data["team"]
 
-            count = (
-                event.gift.repeat_count
-                or 1
-            )
+        scores[team] += points
 
+        print(f"🔥 {team}: +{points}")
+        print(f"📊 Счёт: {scores}")
 
-            gift_type = getattr(
-                event.gift,
-                "gift_type",
-                None
-            )
-
-            repeat_end = getattr(
-                event.gift,
-                "repeat_end",
-                None
-            )
-
-
-            print(
-                f"🎁 {username}: {gift_name} x{count}"
-            )
-
-
-            # ждём окончания серии
-            if gift_type == 1 and repeat_end != 1:
-                return
-
-
-            if gift_name not in GIFTS:
-
-                print(
-                    f"⚠️ Неизвестный подарок: {gift_name}"
-                )
-
-                return
-
-
-
-            gift = GIFTS[gift_name]
-
-            points = (
-                gift["points"]
-                * count
-            )
-
-            team = gift["team"]
-
-
-
-            with score_lock:
-
-                scores[team] += points
-
-                current_score = {
-                    "girls": scores["girls"],
-                    "boys": scores["boys"]
+        socketio.emit(
+            "score_update",
+            {
+                "girls": scores["girls"],
+                "boys": scores["boys"],
+                "event": {
+                    "username": username,
+                    "gift": gift_name,
+                    "points": points,
+                    "team": team,
+                    "count": count
                 }
-
-
-
-            print(
-                f"🔥 {team}: +{points}"
-            )
-
-            print(
-                f"📊 Счёт: {current_score}"
-            )
-
-
-
-            socketio.emit(
-                "score_update",
-                {
-                    **current_score,
-
-                    "event": {
-                        "username": username,
-                        "gift": gift_name,
-                        "points": points,
-                        "team": team,
-                        "count": count
-                    }
-                }
-            )
-
-
-        client.run()
-
-
-    except Exception as e:
-
-        print(
-            "❌ Ошибка TikTok клиента:",
-            e
+            }
         )
 
-
-
+    client.run()
 # =====================
 # START
 # =====================
