@@ -84,7 +84,10 @@ def run_tiktok():
         unique_id=TIKTOK_USERNAME
     )
 
-    @client.on(ConnectEvent)
+@client.on(ConnectEvent)
+async def on_connect(event):
+    print("🔥 CONNECT EVENT ПОЛУЧЕН")
+    print(f"✅ Подключено к TikTok LIVE: @{TIKTOK_USERNAME}")
     async def on_connect(event):
         print(f"✅ Подключено к TikTok LIVE: @{TIKTOK_USERNAME}")
 
@@ -125,7 +128,13 @@ def run_tiktok():
             }
         )
 
+print("⏳ Запускаю TikTok клиент...")
+
+try:
     client.run()
+except Exception as e:
+    print("❌ TikTok ошибка:", repr(e))
+
 # =====================
 # START
 # =====================
