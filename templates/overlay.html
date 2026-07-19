@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Boys VS Girls</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: transparent; font-family: 'Arial Black', Arial, sans-serif; width: 1280px; height: 200px; overflow: hidden; }
+  .container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; }
+  .team-girls { display: flex; flex-direction: column; align-items: flex-start; z-index: 2; }
+  .team-girls .team-label { background: linear-gradient(135deg, #ff69b4, #ff1493); color: white; padding: 8px 20px; border-radius: 25px; font-size: 22px; font-weight: 900; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); box-shadow: 0 4px 15px rgba(255,20,147,0.5); margin-bottom: 8px; }
+  .team-girls .score { font-size: 64px; font-weight: 900; color: #ff1493; text-shadow: 3px 3px 0px #fff, -1px -1px 0px #fff, 1px -1px 0px #fff, -1px 1px 0px #fff; line-height: 1; }
+  .team-boys { display: flex; flex-direction: column; align-items: flex-end; z-index: 2; }
+  .team-boys .team-label { background: linear-gradient(135deg, #00bfff, #0080ff); color: white; padding: 8px 20px; border-radius: 25px; font-size: 22px; font-weight: 900; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); box-shadow: 0 4px 15px rgba(0,128,255,0.5); margin-bottom: 8px; }
+  .team-boys .score { font-size: 64px; font-weight: 900; color: #0080ff; text-shadow: 3px 3px 0px #fff, -1px -1px 0px #fff, 1px -1px 0px #fff, -1px 1px 0px #fff; line-height: 1; }
+  .progress-section { flex: 1; margin: 0 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .vs-badge { background: linear-gradient(135deg, #ff69b4, #0080ff); color: white; font-size: 28px; font-weight: 900; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 3px solid white; }
+  .progress-bar { width: 100%; height: 24px; background: #0080ff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 2px solid white; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #ff69b4, #ff1493); border-radius: 12px; transition: width 0.8s ease; width: 50%; }
+  .gift-notification { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(0,0,0,0.85); color: white; padding: 12px 25px; border-radius: 30px; font-size: 20px; font-weight: 700; white-space: nowrap; transition: transform 0.4s ease; border: 2px solid rgba(255,255,255,0.2); z-index: 100; }
+  .gift-notification.show { transform: translateX(-50%) translateY(0); }
+  .gift-notification.girls-notif { border-color: #ff1493; box-shadow: 0 4px 20px rgba(255,20,147,0.5); }
+  .gift-notification.boys-notif { border-color: #0080ff; box-shadow: 0 4px 20px rgba(0,128,255,0.5); }
+  @keyframes scorePopGirls { 0% { transform: scale(1); color: #ff1493; } 50% { transform: scale(1.3); color: #ff69b4; } 100% { transform: scale(1); color: #ff1493; } }
+  @keyframes scorePopBoys { 0% { transform: scale(1); color: #0080ff; } 50% { transform: scale(1.3); color: #00bfff; } 100% { transform: scale(1); color: #0080ff; } }
+  .score.pop-girls { animation: scorePopGirls 0.5s ease; }
+  .score.pop-boys { animation: scorePopBoys 0.5s ease; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="team-girls">
+    <div class="team-label">&#128119; GIRLS</div>
+    <div class="score" id="girls-score">0</div>
+  </div>
+  <div class="progress-section">
+    <div class="vs-badge">VS</div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+  <div class="team-boys">
+    <div class="team-label">&#128118; BOYS</div>
+    <div class="score" id="boys-score">0</div>
+  </div>
+</div>
+<div class="gift-notification" id="notification">&#127921; +0 очков</div>
+<script>
+  const socket = io('http://localhost:5000');
+  const girlsScoreEl = document.getElementById('girls-score');
+  const boysScoreEl = document.getElementById('boys-score');
+  const progressFill = document.getElementById('progress-fill');
+  const notification = document.getElementById('notification');
+  let notifTimeout;
+  socket.on('score_update', (data) => {
+    const girls = data.girls || 0;
+    const boys = data.boys || 0;
+    const total = girls + boys;
+    girlsScoreEl.textContent = girls;
+    boysScoreEl.textContent = boys;
+    const girlsPercent = total === 0 ? 50 : (girls / total) * 100;
+    progressFill.style.width = girlsPercent + '%';
+    if (data.event) {
+      const ev = data.event;
+      const teamName = ev.team === 'girls' ? '&#128119; GIRLS' : '&#128118; BOYS';
+      const teamClass = ev.team === 'girls' ? 'girls-notif' : 'boys-notif';
+      notification.innerHTML = '&#127921; ' + ev.username + ' &rarr; ' + teamName + ' +' + ev.points + ' (' + ev.gift + ' x' + ev.count + ')';
+      notification.className = 'gift-notification show ' + teamClass;
+      if (ev.team === 'girls') {
+        girlsScoreEl.classList.remove('pop-girls');
+        void girlsScoreEl.offsetWidth;
+        girlsScoreEl.classList.add('pop-girls');
+      } else {
+        boysScoreEl.classList.remove('pop-boys');
+        void boysScoreEl.offsetWidth;
+        boysScoreEl.classList.add('pop-boys');
+      }
+      clearTimeout(notifTimeout);
+      notifTimeout = setTimeout(() => {
+        notification.classList.remove('show', 'girls-notif', 'boys-notif');
+      }, 4000);
+    }
+  });
+</script>
+</body>
+</html>
