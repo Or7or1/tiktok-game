@@ -78,6 +78,7 @@ def handle_connect():
 # =====================
 
 def run_tiktok():
+print(f"🔎 Пытаюсь подключиться к TikTok: @{TIKTOK_USERNAME}")
 
     try:
 
