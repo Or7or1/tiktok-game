@@ -78,13 +78,11 @@ def handle_connect():
 # =====================
 
 def run_tiktok():
-print(f"🔎 Пытаюсь подключиться к TikTok: @{TIKTOK_USERNAME}")
+    print(f"🔎 Пытаюсь подключиться к TikTok: @{TIKTOK_USERNAME}")
 
-    try:
-
-        client = TikTokLiveClient(
-            unique_id=TIKTOK_USERNAME
-        )
+    client = TikTokLiveClient(
+        unique_id=TIKTOK_USERNAME
+    )
 
 
         @client.on(ConnectEvent)
