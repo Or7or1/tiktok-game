@@ -203,14 +203,7 @@ def run_tiktok():
 # START
 # =====================
 
-if __name__ == "__main__":
-
-
-    print(
-        "🚀 Запуск TikTok Game..."
-    )
-
-
+if __name__ == '__main__':
     tiktok_thread = threading.Thread(
         target=run_tiktok,
         daemon=True
@@ -218,28 +211,11 @@ if __name__ == "__main__":
 
     tiktok_thread.start()
 
+    print("🚀 TikTok Game запущен")
 
-
-    port = int(
-        os.environ.get(
-            "PORT",
-            5000
-        )
+    socketio.run(
+        app,
+        host='0.0.0.0',
+        port=int(os.environ.get("PORT", 5000)),
+        allow_unsafe_werkzeug=True
     )
-
-
-    print(
-        f"🌐 Сервер: 0.0.0.0:{port}"
-    )
-
-    print(
-        f"🎮 TikTok: @{TIKTOK_USERNAME}"
-    )
-
-
-  socketio.run(
-    app,
-    host='0.0.0.0',
-    port=5000,
-    allow_unsafe_werkzeug=True
-)
