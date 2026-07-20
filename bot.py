@@ -113,13 +113,23 @@ async def run_tiktok_async():
             }
         )
 
-    print("⏳ Запускаю TikTok клиент...")
-
     while True:
         try:
+            print("⏳ Вызываю client.start()...")
+            
+            # Проверяем идёт ли эфир
+            is_live = await client.is_live()
+            print(f"📡 Эфир идёт: {is_live}")
+            
+            if not is_live:
+                print("😴 Эфир не идёт. Жду 30 секунд...")
+                await asyncio.sleep(30)
+                continue
+                
             await client.start()
+            
         except Exception as e:
-            print("❌ TikTok ошибка:", repr(e))
+            print(f"❌ TikTok ошибка: {repr(e)}")
             print("🔄 Повторная попытка через 30 секунд...")
             await asyncio.sleep(30)
 
