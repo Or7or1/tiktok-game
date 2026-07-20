@@ -60,7 +60,12 @@ async def run_tiktok_async():
     while True:
         try:
             print("🔧 Создаю TikTokLiveClient...", flush=True)
-            client = TikTokLiveClient(unique_id=TIKTOK_USERNAME)
+            client = TikTokLiveClient(
+                unique_id=TIKTOK_USERNAME,
+                web_client_params={
+                    "api_key": os.getenv("EULERSTREAM_API_KEY", "")
+                }
+            )
             print("✅ TikTokLiveClient создан!", flush=True)
 
             @client.on(ConnectEvent)
