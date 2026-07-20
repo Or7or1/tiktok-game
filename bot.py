@@ -26,30 +26,23 @@ socketio = SocketIO(
 # SETTINGS
 # =====================
 
-TIKTOK_USERNAME = os.getenv(
-    "TIKTOK_USERNAME",
-    "fit.siren"
-)
-
+TIKTOK_USERNAME = os.getenv("TIKTOK_USERNAME", "fit.siren")
 
 GIFTS = {
     "Rose": {
         "points": 1,
         "team": "girls"
     },
-
     "TikTok": {
         "points": 1,
         "team": "boys"
     },
 }
 
-
 scores = {
     "girls": 0,
     "boys": 0
 }
-
 
 score_lock = threading.Lock()
 
@@ -66,11 +59,7 @@ def index():
 @socketio.on("connect")
 def handle_connect():
     print("🌐 Overlay подключён")
-
-    socketio.emit(
-        "score_update",
-        scores
-    )
+    socketio.emit("score_update", scores)
 
 
 # =====================
@@ -80,15 +69,11 @@ def handle_connect():
 def run_tiktok():
     print(f"🔎 Пытаюсь подключиться к TikTok: @{TIKTOK_USERNAME}")
 
-    client = TikTokLiveClient(
-        unique_id=TIKTOK_USERNAME
-    )
+    client = TikTokLiveClient(unique_id=TIKTOK_USERNAME)
 
-@client.on(ConnectEvent)
-async def on_connect(event):
-    print("🔥 CONNECT EVENT ПОЛУЧЕН")
-    print(f"✅ Подключено к TikTok LIVE: @{TIKTOK_USERNAME}")
+    @client.on(ConnectEvent)
     async def on_connect(event):
+        print("🔥 CONNECT EVENT ПОЛУЧЕН")
         print(f"✅ Подключено к TikTok LIVE: @{TIKTOK_USERNAME}")
 
     @client.on(GiftEvent)
@@ -104,11 +89,15 @@ async def on_connect(event):
             return
 
         gift_data = GIFTS[gift_name]
-
         points = gift_data["points"] * count
         team = gift_data["team"]
 
-        scores[team] += points
+        with score_lock:
+            scores[team] += points
+            current_scores = {
+                "girls": scores["girls"],
+                "boys": scores["boys"]
+            }
 
         print(f"🔥 {team}: +{points}")
         print(f"📊 Счёт: {scores}")
@@ -116,8 +105,8 @@ async def on_connect(event):
         socketio.emit(
             "score_update",
             {
-                "girls": scores["girls"],
-                "boys": scores["boys"],
+                "girls": current_scores["girls"],
+                "boys": current_scores["boys"],
                 "event": {
                     "username": username,
                     "gift": gift_name,
@@ -128,12 +117,13 @@ async def on_connect(event):
             }
         )
 
-print("⏳ Запускаю TikTok клиент...")
+    print("⏳ Запускаю TikTok клиент...")
 
-try:
-    client.run()
-except Exception as e:
-    print("❌ TikTok ошибка:", repr(e))
+    try:
+        client.run()
+    except Exception as e:
+        print("❌ TikTok ошибка:", repr(e))
+
 
 # =====================
 # START
@@ -144,7 +134,6 @@ if __name__ == '__main__':
         target=run_tiktok,
         daemon=True
     )
-
     tiktok_thread.start()
 
     print("🚀 TikTok Game запущен")
