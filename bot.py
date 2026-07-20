@@ -1,4 +1,5 @@
 import os
+import asyncio
 import threading
 
 from flask import Flask, render_template
@@ -6,7 +7,6 @@ from flask_socketio import SocketIO
 
 from TikTokLive import TikTokLiveClient
 from TikTokLive.events import GiftEvent, ConnectEvent
-
 
 # =====================
 # FLASK
@@ -20,7 +20,6 @@ socketio = SocketIO(
     cors_allowed_origins="*",
     async_mode="threading"
 )
-
 
 # =====================
 # SETTINGS
@@ -46,7 +45,6 @@ scores = {
 
 score_lock = threading.Lock()
 
-
 # =====================
 # WEB PAGE
 # =====================
@@ -55,18 +53,16 @@ score_lock = threading.Lock()
 def index():
     return render_template("overlay.html")
 
-
 @socketio.on("connect")
 def handle_connect():
     print("🌐 Overlay подключён")
     socketio.emit("score_update", scores)
 
-
 # =====================
 # TIKTOK BOT
 # =====================
 
-def run_tiktok():
+async def run_tiktok_async():
     print(f"🔎 Пытаюсь подключиться к TikTok: @{TIKTOK_USERNAME}")
 
     client = TikTokLiveClient(unique_id=TIKTOK_USERNAME)
@@ -119,11 +115,18 @@ def run_tiktok():
 
     print("⏳ Запускаю TikTok клиент...")
 
-    try:
-        client.run()
-    except Exception as e:
-        print("❌ TikTok ошибка:", repr(e))
+    while True:
+        try:
+            await client.start()
+        except Exception as e:
+            print("❌ TikTok ошибка:", repr(e))
+            print("🔄 Повторная попытка через 30 секунд...")
+            await asyncio.sleep(30)
 
+def run_tiktok():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(run_tiktok_async())
 
 # =====================
 # START
