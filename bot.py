@@ -63,6 +63,7 @@ def handle_connect():
 # =====================
 
 async def run_tiktok_async():
+    print("🟢 run_tiktok_async ЗАПУЩЕН")
     print(f"🔎 Пытаюсь подключиться к TikTok: @{TIKTOK_USERNAME}")
 
     client = TikTokLiveClient(unique_id=TIKTOK_USERNAME)
@@ -115,28 +116,33 @@ async def run_tiktok_async():
 
     while True:
         try:
-            print("⏳ Вызываю client.start()...")
-            
-            # Проверяем идёт ли эфир
+            print("⏳ Проверяю эфир...")
+
             is_live = await client.is_live()
             print(f"📡 Эфир идёт: {is_live}")
-            
+
             if not is_live:
                 print("😴 Эфир не идёт. Жду 30 секунд...")
                 await asyncio.sleep(30)
                 continue
-                
+
+            print("🚀 Подключаюсь к эфиру...")
             await client.start()
-            
+
         except Exception as e:
             print(f"❌ TikTok ошибка: {repr(e)}")
             print("🔄 Повторная попытка через 30 секунд...")
             await asyncio.sleep(30)
 
+
 def run_tiktok():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(run_tiktok_async())
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        print("✅ asyncio loop создан")
+        loop.run_until_complete(run_tiktok_async())
+    except Exception as e:
+        print(f"💥 КРИТИЧЕСКАЯ ОШИБКА в run_tiktok: {repr(e)}")
 
 # =====================
 # START
