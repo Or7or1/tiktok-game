@@ -1,13 +1,28 @@
+import sys
 import os
+
+sys.stdout.reconfigure(line_buffering=True)
+sys.stderr.reconfigure(line_buffering=True)
+
+print("=== БОТ ЗАПУСТИЛСЯ ===", flush=True)
+print(f"Python версия: {sys.version}", flush=True)
+print(f"PORT: {os.environ.get('PORT', 'не задан')}", flush=True)
+
 import asyncio
 import threading
 import time
 
+print("=== ИМПОРТЫ OK ===", flush=True)
+
 from flask import Flask, render_template
 from flask_socketio import SocketIO
 
+print("=== FLASK ИМПОРТИРОВАН ===", flush=True)
+
 from TikTokLive import TikTokLiveClient
 from TikTokLive.events import GiftEvent, ConnectEvent
+
+print("=== TIKTOK ИМПОРТИРОВАН ===", flush=True)
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "secret!")
@@ -17,6 +32,8 @@ socketio = SocketIO(
     cors_allowed_origins="*",
     async_mode="threading"
 )
+
+print("=== FLASK APP СОЗДАН ===", flush=True)
 
 TIKTOK_USERNAME = os.getenv("TIKTOK_USERNAME", "fit.siren")
 
@@ -34,21 +51,21 @@ def index():
 
 @socketio.on("connect")
 def handle_connect():
-    print("🌐 Overlay подключён")
+    print("🌐 Overlay подключён", flush=True)
     socketio.emit("score_update", scores)
 
 async def run_tiktok_async():
-    print("🟢 run_tiktok_async ЗАПУЩЕН")
+    print("🟢 run_tiktok_async ЗАПУЩЕН", flush=True)
 
     while True:
         try:
-            print("🔧 Создаю TikTokLiveClient...")
+            print("🔧 Создаю TikTokLiveClient...", flush=True)
             client = TikTokLiveClient(unique_id=TIKTOK_USERNAME)
-            print("✅ TikTokLiveClient создан!")
+            print("✅ TikTokLiveClient создан!", flush=True)
 
             @client.on(ConnectEvent)
             async def on_connect(event):
-                print(f"✅ Подключено к эфиру @{TIKTOK_USERNAME}")
+                print(f"✅ Подключено к эфиру @{TIKTOK_USERNAME}", flush=True)
 
             @client.on(GiftEvent)
             async def on_gift(event):
@@ -56,10 +73,10 @@ async def run_tiktok_async():
                 username = event.user.nickname
                 count = event.gift.repeat_count or 1
 
-                print(f"🎁 {username}: {gift_name} x{count}")
+                print(f"🎁 {username}: {gift_name} x{count}", flush=True)
 
                 if gift_name not in GIFTS:
-                    print(f"⚠️ Неизвестный подарок: {gift_name}")
+                    print(f"⚠️ Неизвестный подарок: {gift_name}", flush=True)
                     return
 
                 gift_data = GIFTS[gift_name]
@@ -70,7 +87,7 @@ async def run_tiktok_async():
                     scores[team] += points
                     current_scores = dict(scores)
 
-                print(f"🔥 {team}: +{points} | Счёт: {scores}")
+                print(f"🔥 {team}: +{points} | Счёт: {scores}", flush=True)
 
                 socketio.emit("score_update", {
                     "girls": current_scores["girls"],
@@ -84,43 +101,45 @@ async def run_tiktok_async():
                     }
                 })
 
-            print("⏳ Проверяю идёт ли эфир...")
+            print("⏳ Проверяю идёт ли эфир...", flush=True)
             is_live = await client.is_live()
-            print(f"📡 Эфир идёт: {is_live}")
+            print(f"📡 Эфир идёт: {is_live}", flush=True)
 
             if not is_live:
-                print("😴 Эфир не идёт. Жду 30 секунд...")
+                print("😴 Эфир не идёт. Жду 30 секунд...", flush=True)
                 await asyncio.sleep(30)
                 continue
 
-            print("🚀 Подключаюсь к эфиру...")
+            print("🚀 Подключаюсь к эфиру...", flush=True)
             await client.start()
 
         except Exception as e:
-            print(f"❌ Ошибка: {repr(e)}")
-            print("🔄 Повтор через 30 секунд...")
+            print(f"❌ Ошибка: {repr(e)}", flush=True)
+            print("🔄 Повтор через 30 секунд...", flush=True)
             await asyncio.sleep(30)
 
 
 def run_tiktok():
     try:
-        print("⏰ Жду 5 секунд пока Flask запустится...")
+        print("⏰ Жду 5 секунд пока Flask запустится...", flush=True)
         time.sleep(5)
-        print("🔁 Запускаю asyncio loop...")
+        print("🔁 Запускаю asyncio loop...", flush=True)
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(run_tiktok_async())
 
     except Exception as e:
-        print(f"💥 КРИТИЧЕСКАЯ ОШИБКА в run_tiktok: {repr(e)}")
+        print(f"💥 КРИТИЧЕСКАЯ ОШИБКА в run_tiktok: {repr(e)}", flush=True)
 
 
 if __name__ == '__main__':
-    print("🚀 TikTok Game запущен")
+    print("🚀 TikTok Game запущен", flush=True)
 
     tiktok_thread = threading.Thread(target=run_tiktok, daemon=True)
     tiktok_thread.start()
+
+    print("🌐 Запускаю Flask...", flush=True)
 
     socketio.run(
         app,
