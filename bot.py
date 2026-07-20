@@ -66,12 +66,17 @@ async def run_tiktok_async():
     print("🟢 run_tiktok_async ЗАПУЩЕН")
     print(f"🔎 Пытаюсь подключиться к TikTok: @{TIKTOK_USERNAME}")
 
-    client = TikTokLiveClient(unique_id=TIKTOK_USERNAME)
+    try:
+        print("🔧 Создаю TikTokLiveClient...")
+        client = TikTokLiveClient(unique_id=TIKTOK_USERNAME)
+        print("✅ TikTokLiveClient создан!")
+    except Exception as e:
+        print(f"💥 Ошибка создания клиента: {repr(e)}")
+        return
 
     @client.on(ConnectEvent)
     async def on_connect(event):
         print("🔥 CONNECT EVENT ПОЛУЧЕН")
-        print(f"✅ Подключено к TikTok LIVE: @{TIKTOK_USERNAME}")
 
     @client.on(GiftEvent)
     async def on_gift(event):
@@ -99,21 +104,19 @@ async def run_tiktok_async():
         print(f"🔥 {team}: +{points}")
         print(f"📊 Счёт: {scores}")
 
-        socketio.emit(
-            "score_update",
-            {
-                "girls": current_scores["girls"],
-                "boys": current_scores["boys"],
-                "event": {
-                    "username": username,
-                    "gift": gift_name,
-                    "points": points,
-                    "team": team,
-                    "count": count
-                }
+        socketio.emit("score_update", {
+            "girls": current_scores["girls"],
+            "boys": current_scores["boys"],
+            "event": {
+                "username": username,
+                "gift": gift_name,
+                "points": points,
+                "team": team,
+                "count": count
             }
-        )
+        })
 
+    print("🔁 Начинаю цикл подключения...")
     while True:
         try:
             print("⏳ Проверяю эфир...")
